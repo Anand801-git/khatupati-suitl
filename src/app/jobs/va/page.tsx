@@ -75,7 +75,7 @@ export default function VAJobs() {
     return summary;
   }, [allAssignments]);
 
-  const totalAtVendors = Object.values(vendorStockSummary).reduce((a, b) => a + b, 0);
+  const totalAtVendors = (Object.values(vendorStockSummary) as number[]).reduce((a, b) => a + b, 0);
 
   const pendingVA = useMemo(() => {
     return purchases.filter(p => {
@@ -211,7 +211,7 @@ function VACard({ purchase, type, vendors, addAssignment, updateAssignment, dele
     <Card style={style} className={`border-l-4 ${type === 'pending' ? 'border-l-secondary' : 'border-l-green-600'} transition-all duration-300 ${isReceived ? 'opacity-50' : ''}`}>
       <CardContent className="p-4 space-y-4">
         <div className="flex justify-between items-start">
-          <div onClick={() => window.location.href=`/purchases/${purchase.id}`} className="cursor-pointer clickable-card p-1 -m-1 rounded-lg">
+          <div onClick={() => window.location.href=`/purchases/view?id=${purchase.id}`} className="cursor-pointer clickable-card p-1 -m-1 rounded-lg">
             <h3 className="text-lg font-bold">{purchase.qualityName}</h3>
             <div className="flex gap-2 items-center mt-1">
               <Badge variant="outline" className="text-[10px] font-mono">#{purchase.id.substr(-4).toUpperCase()}</Badge>

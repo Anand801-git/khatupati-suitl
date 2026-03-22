@@ -29,7 +29,7 @@ export default function EmbroideryPage() {
       return acc;
     }, {} as { [key: string]: number });
 
-    const totalAtVendors = Object.values(vendorStockSummary).reduce((sum: number, count: number) => sum + count, 0);
+    const totalAtVendors = (Object.values(vendorStockSummary) as number[]).reduce((sum: number, count: number) => sum + count, 0);
 
     return { pending, inProgress, completed, vendorStockSummary, totalAtVendors };
   }, [allAssignments, vendors]);
@@ -58,7 +58,7 @@ export default function EmbroideryPage() {
                     <p className="text-xl font-bold">{totalAtVendors}</p>
                   </CardContent>
                 </Card>
-                {Object.entries(vendorStockSummary).map(([vendor, count]: [string, number], index) => (
+                {(Object.entries(vendorStockSummary) as [string, number][]).map(([vendor, count]: [string, number], index) => (
                   <Card 
                     key={vendor} 
                     className={`min-w-[120px] cursor-pointer border-2 ${vendorFilter === vendor ? 'border-[#00897B] bg-[#E8FDF5]' : 'bg-white border-[#F0EAF8]'} clickable-card`}

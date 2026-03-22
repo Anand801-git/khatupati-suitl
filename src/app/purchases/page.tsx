@@ -165,7 +165,7 @@ export default function PurchaseHistory() {
                 <div key={p.id} 
                      className="group relative flex flex-col gap-4 transition-all duration-400 ease-out hover:translate-x-[2px] hover:shadow-xl"
                      style={{ animation: `fade-up 0.4s ease-out ${i * 50}ms both` }}>
-                  <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-muted shadow-lg cursor-pointer clickable-card" onClick={() => router.push(`/purchases/${p.id}`)}>
+                  <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-muted shadow-lg cursor-pointer clickable-card" onClick={() => router.push(`/purchases/view?id=${p.id}`)}>
                     {p.designPhoto ? <Image src={p.designPhoto} alt={p.qualityName} fill className="object-cover transition-transform group-hover:scale-105" /> : <div className="flex items-center justify-center h-full opacity-10"><Package className="w-20 h-20" /></div>}
                     <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
                       <Badge className="bg-white/95 text-primary border-none shadow-xl uppercase font-black text-[10px] rounded-[20px]">{p.state}</Badge>
@@ -204,7 +204,7 @@ export default function PurchaseHistory() {
                 </thead>
                 <tbody>
                   {filteredPurchases.map((p, index) => (
-                    <tr key={p.id} className="border-b hover:bg-muted/30 cursor-pointer transition-all hover:translate-x-[2px]" onClick={() => router.push(`/purchases/${p.id}`)} style={{ animation: `fade-up 0.4s ease-out ${index * 50}ms both` }}>
+                    <tr key={p.id} className="border-b hover:bg-muted/30 cursor-pointer transition-all hover:translate-x-[2px]" onClick={() => router.push(`/purchases/view?id=${p.id}`)} style={{ animation: `fade-up 0.4s ease-out ${index * 50}ms both` }}>
                       <td className="p-4">#{p.id.substr(-4).toUpperCase()}</td>
                       <td className="p-4 font-bold">
                         <div className="flex flex-col">
@@ -216,7 +216,7 @@ export default function PurchaseHistory() {
                         {p.range ? <Badge variant="secondary" className="text-[10px]">{p.range}</Badge> : '-'}
                       </td>
                       <td className="p-4 text-right">
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); router.push(`/purchases/${p.id}/edit`); }}><Pencil className="w-3 h-3" /></Button>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); router.push(`/purchases/edit?id=${p.id}`); }}><Pencil className="w-3 h-3" /></Button>
                       </td>
                     </tr>
                   ))}

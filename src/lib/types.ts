@@ -56,6 +56,7 @@ export interface Purchase {
   dupatta: FabricComponent;
   lace: FabricComponent;
   createdAt: string;
+  owner: string;
   tags?: string[];
   range?: string;
 }

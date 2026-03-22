@@ -154,7 +154,7 @@ export default function NewPurchase() {
     const aiTags = analysisResult?.keywords || [];
     const combinedTags = Array.from(new Set([...manualTags, ...aiTags]));
 
-    const purchase: Omit<Purchase, 'id' | 'createdAt'> = {
+    const purchase: Omit<Purchase, 'id' | 'createdAt' | 'owner'> = {
       qualityName: formData.kQuality || "Unspecified Lot",
       piecesCount: formData.piecesCount || 0,
       purchaseDate: formData.purchaseDate,

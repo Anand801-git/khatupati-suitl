@@ -195,7 +195,7 @@ export default function Dashboard() {
                       <TableRow 
                         key={p.id} 
                         className="cursor-pointer hover:bg-muted/30 transition-all"
-                        onClick={() => router.push(`/purchases/${p.id}`)}
+                        onClick={() => router.push(`/purchases/view?id=${p.id}`)}
                       >
                         <TableCell className="py-4">
                           <div className="flex flex-col">

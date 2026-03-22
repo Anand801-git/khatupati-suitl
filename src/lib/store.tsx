@@ -11,7 +11,7 @@ interface KhatupatiStoreContextType {
   purchases: Purchase[];
   allAssignments: ProductionJob[];
   directory: MasterEntry[];
-  addPurchase: (purchase: Omit<Purchase, 'id' | 'createdAt'>) => Promise<string>;
+  addPurchase: (purchase: Omit<Purchase, 'id' | 'createdAt' | 'owner'>) => Promise<string>;
   updatePurchase: (updatedPurchase: Partial<Purchase> & { id: string }) => Promise<void>;
   deletePurchase: (id: string) => Promise<void>;
   duplicatePurchase: (id: string) => Promise<string | undefined>;
@@ -99,7 +99,7 @@ export function KhatupatiProvider({ children }: { children: ReactNode }) {
 
   const qualities = useMemo(() => directory.filter(e => e.category === 'Fabric'), [directory]);
 
-  const addPurchase = useCallback(async (purchase: Omit<Purchase, 'id' | 'createdAt'>) => {
+  const addPurchase = useCallback(async (purchase: Omit<Purchase, 'id' | 'createdAt' | 'owner'>) => {
     if (!user) throw new Error("User not authenticated");
     const docRef = doc(collection(db, 'lots'));
     const data = { ...purchase, createdAt: serverTimestamp(), owner: user.uid };
