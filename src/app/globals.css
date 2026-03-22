@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 33% 98%; /* #F9FAFC */
+    --foreground: 221 69% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 221 69% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 221 69% 15%;
+    --primary: 221 69% 30%; /* #173880 */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 251 56% 55%; /* #634CCB */
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 251 56% 96%;
+    --accent-foreground: 251 56% 25%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 69% 30%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 216 34% 17%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+    overscroll-behavior: none;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline font-bold;
+  }
+}
+
+/* Page Header Gradients */
+.dashboard-header { background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%); --header-text-color: #1E1B4B; }
+.lots-gallery-header { background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); --header-text-color: #0C4A6E; }
+.embroidery-header { background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); --header-text-color: #4C1D95; }
+.va-stage-header { background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); --header-text-color: #064E3B; }
+.default-header { background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); --header-text-color: #0F172A; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out forwards;
+}
+
+@keyframes progress-bar-anim {
+  from { width: 0%; }
+}
+
+.clickable-card:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease-in-out;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  body { background: white; }
+}
+
+.print-only { display: none; }

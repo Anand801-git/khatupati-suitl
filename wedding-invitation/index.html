@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="You are invited to the wedding of Eleanor and James. Please join us to celebrate our special day.">
+    <title>Eleanor & James - Wedding Invitation</title>
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Playfair Display (Serif) for headings, Lato (Sans) for text, Great Vibes for accent -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <a href="#hero" class="nav-brand">E & J</a>
+        <ul class="nav-links">
+            <li><a href="#hero">Home</a></li>
+            <li><a href="#story">Our Story</a></li>
+            <li><a href="#details">Details</a></li>
+            <li><a href="#rsvp">RSVP</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Hero Section -->
+    <header id="hero" class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content fade-in">
+            <h3 class="wedding-announcement">We Are Getting Married</h3>
+            <h1 class="couple-names">Eleanor & James</h1>
+            <p class="wedding-date">September 24th, 2026 &bull; Tuscany, Italy</p>
+            <a href="#rsvp" class="btn-primary" style="margin-top: 2rem;">RSVP Now</a>
+        </div>
+        <a href="#story" class="scroll-indicator" aria-label="Scroll Down">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6"/>
+            </svg>
+        </a>
+    </header>
+
+    <!-- Our Story Section -->
+    <section id="story" class="section sec-story">
+        <div class="container">
+            <div class="story-content hidden">
+                <h2 class="section-title">Our Story</h2>
+                <div class="divider"></div>
+                <p class="story-text">
+                    It all began with a chance encounter at a local coffee shop. Six years later, countless memories made, and infinite laughs shared, we are finally taking the big step to spend the rest of our lives together. We couldn't be more excited to celebrate our love story with our closest family and friends.
+                </p>
+                <div class="signature">
+                    With love, E & J
+                </div>
+            </div>
+            <div class="story-images hidden">
+                <img src="https://images.unsplash.com/photo-1522673607200-164d1f62e15b?auto=format&fit=crop&q=80&w=800" alt="Eleanor and James" class="story-img img-1">
+                <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&q=80&w=800" alt="Wedding Rings" class="story-img img-2">
+            </div>
+        </div>
+    </section>
+
+    <!-- Event Details Section -->
+    <section id="details" class="section sec-details">
+        <div class="container text-center hidden">
+            <h2 class="section-title">When & Where</h2>
+            <div class="divider"></div>
+            
+            <div class="details-cards">
+                <div class="detail-card glass">
+                    <div class="icon-wrap">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                        </svg>
+                    </div>
+                    <h3>The Ceremony</h3>
+                    <p>Saturday, September 24th, 2026<br>4:00 PM</p>
+                    <p class="location-name">Villa Cetinale</p>
+                    <p class="address">Siena, Tuscany, Italy</p>
+                </div>
+
+                <div class="detail-card glass">
+                    <div class="icon-wrap">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5">
+                            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                        </svg>
+                    </div>
+                    <h3>The Reception</h3>
+                    <p>Celebration, dinner, and dancing<br>6:00 PM</p>
+                    <p class="location-name">Villa Gardens</p>
+                    <p class="address">Dinner will be served outdoors</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RSVP Section -->
+    <section id="rsvp" class="section sec-rsvp">
+        <div class="container hidden">
+            <div class="rsvp-wrapper glass">
+                <h2 class="section-title text-center">Are You Attending?</h2>
+                <div class="divider"></div>
+                <p class="text-center" style="margin-bottom: 2rem;">Please let us know your plans by August 1st, 2026</p>
+                
+                <form id="rsvp-form" class="rsvp-form">
+                    <div class="form-group">
+                        <label for="name">Full Name(s)</label>
+                        <input type="text" id="name" required placeholder="John & Jane Doe">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" required placeholder="john@example.com">
+                    </div>
+                    
+                    <div class="form-group radio-group">
+                        <p>Will you be attending?</p>
+                        <label class="radio-label">
+                            <input type="radio" name="attending" value="yes" required>
+                            <span class="custom-radio"></span>
+                            Joyfully Accepts
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="attending" value="no">
+                            <span class="custom-radio"></span>
+                            Regretfully Declines
+                        </label>
+                    </div>
+
+                    <div class="form-group" id="guest-count-group">
+                        <label for="guests">Number of Guests</label>
+                        <select id="guests">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="dietary-group">
+                        <label for="dietary">Dietary Restrictions or Notes</label>
+                        <textarea id="dietary" rows="3" placeholder="Any allergies or special requirements?"></textarea>
+                    </div>
+
+                    <div class="form-submit">
+                        <button type="submit" class="btn-primary w-100">Send RSVP</button>
+                    </div>
+                </form>
+
+                <!-- Success Message Container -->
+                <div id="form-success" class="form-success hidden-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" class="success-icon">
+                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>
+                    </svg>
+                    <h3>Thank You!</h3>
+                    <p>Your RSVP has been securely received.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container text-center">
+            <h2 class="couple-names footer-names">Eleanor & James</h2>
+            <p>We can't wait to celebrate with you!</p>
+            <p class="credits" style="font-size: 0.8rem; margin-top: 3rem; color: #888;">Crafted with ♥ for your special day.</p>
+        </div>
+    </footer>
+
+    <!-- Custom Script -->
+    <script src="script.js"></script>
+</body>
+</html>

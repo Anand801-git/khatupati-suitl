@@ -1,0 +1,139 @@
+
+{
+  "entities": {
+    "Purchase": {
+      "title": "Purchase Lot",
+      "description": "A master lot of fabric pieces purchased for production.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "qualityName": { "type": "string" },
+        "piecesCount": { "type": "number" },
+        "state": { "type": "string" },
+        "purchaseDate": { "type": "string" },
+        "designPhoto": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "range": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "kurta": { "$ref": "#/backend/entities/FabricComponent" },
+        "salwar": { "$ref": "#/backend/entities/FabricComponent" },
+        "dupatta": { "$ref": "#/backend/entities/FabricComponent" },
+        "lace": { "$ref": "#/backend/entities/FabricComponent" }
+      }
+    },
+    "FabricComponent": {
+      "title": "Fabric Component",
+      "description": "Details for a specific fabric part of a lot.",
+      "type": "object",
+      "properties": {
+        "qualityName": { "type": "string" },
+        "supplierName": { "type": "string" },
+        "ratePerMeter": { "type": "number" },
+        "metersPerPiece": { "type": "number" },
+        "dyingCharges": { "type": "number" }
+      }
+    },
+    "ProductionJob": {
+      "title": "Production Assignment",
+      "description": "An assignment of pieces to a vendor for a specific process (Embroidery or VA).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "lotId": { "type": "string" },
+        "vendorName": { "type": "string" },
+        "rate": { "type": "number" },
+        "sentDate": { "type": "string" },
+        "receivedDate": { "type": "string" },
+        "receivedQty": { "type": "number" },
+        "challanPhoto": { "type": "string" },
+        "receivedPhoto": { "type": "string" },
+        "processType": { "type": "string", "enum": ["Embroidery", "Value Addition"] },
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "quantity": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "MasterEntry": {
+      "title": "Master Directory Entry",
+      "description": "A unified entry for a vendor or a fabric quality template.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["Fabric", "Vendor"] },
+        "subCategory": { "type": "string", "enum": ["Kurta", "Salwar", "Dupatta", "Lace", "Embroidery", "Value Addition"] },
+        "supplierName": { "type": "string" },
+        "rate": { "type": "number" },
+        "meters": { "type": "number" },
+        "dying": { "type": "number" }
+      }
+    },
+    "DemandForecast": {
+      "title": "AI Demand Forecast",
+      "description": "Predicted inventory needs based on historical data and trends.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "horizon": { "type": "number" },
+        "budgetLimit": { "type": "number" },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "quality": { "type": "string" },
+              "quantity": { "type": "number" },
+              "reason": { "type": "string" },
+              "confidence": { "type": "number" }
+            }
+          }
+        },
+        "designStyles": { "type": "array", "items": { "type": "string" } },
+        "buyingCalendar": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "month": { "type": "string" },
+              "action": { "type": "string" },
+              "priority": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/lots/{lotId}": {
+      "schema": "Purchase",
+      "description": "Master lot data."
+    },
+    "/assignments/{assignmentId}": {
+      "schema": "ProductionJob",
+      "description": "Root-level assignments collection."
+    },
+    "/directory/{entryId}": {
+      "schema": "MasterEntry",
+      "description": "Unified directory for vendors and fabric qualities."
+    },
+    "/trends/{trendId}": {
+      "schema": "MarketTrend",
+      "description": "Market trend analyses."
+    },
+    "/forecasts/{forecastId}": {
+      "schema": "DemandForecast",
+      "description": "Saved AI demand forecasts."
+    }
+  }
+}

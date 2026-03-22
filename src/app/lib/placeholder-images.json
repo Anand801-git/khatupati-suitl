@@ -1,0 +1,23 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "design-1",
+      "description": "Embroidery design for Kurta",
+      "imageUrl": "https://picsum.photos/seed/design1/600/400",
+      "imageHint": "embroidery pattern"
+    },
+    {
+      "id": "design-2",
+      "description": "Handwork stone design for VA",
+      "imageUrl": "https://picsum.photos/seed/design2/600/400",
+      "imageHint": "textile handwork"
+    },
+    {
+      "id": "vendor-1",
+      "description": "Textile warehouse stock",
+      "imageUrl": "https://picsum.photos/seed/warehouse/600/400",
+      "imageHint": "textile fabric"
+    }
+  ]
+}

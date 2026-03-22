@@ -1,0 +1,567 @@
+:root {
+    /* Premium Color Palette */
+    /* Cream background - soft and warm */
+    --cream: #FDFBF7;
+    /* Soft Blush for secondary backgrounds */
+    --blush: #FAF0E9;
+    /* Rich Gold for elegant accents */
+    --gold: #D4AF37;
+    --gold-light: #E8CA72;
+    /* High contrast dark tone for readable elegant text */
+    --dark: #2A363B;
+    /* Muted grey for supporting text */
+    --grey: #6E7C7C;
+    
+    /* Typography Tokens */
+    --font-heading: 'Playfair Display', serif;
+    --font-body: 'Lato', sans-serif;
+    --font-accent: 'Great Vibes', cursive;
+    
+    --transition: all 0.4s ease;
+}
+
+/* Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--dark);
+    background-color: var(--cream);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Typography Foundation */
+h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+}
+
+/* Main typography elements */
+.couple-names {
+    font-size: clamp(3rem, 10vw, 7rem);
+    letter-spacing: -1px;
+    margin: 1rem 0;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.wedding-announcement {
+    font-family: var(--font-accent);
+    color: var(--gold);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    letter-spacing: 2px;
+}
+
+.section-title {
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+    color: var(--dark);
+    margin-bottom: 0.5rem;
+}
+
+.divider {
+    width: 60px;
+    height: 2px;
+    background-color: var(--gold);
+    margin: 1rem 0 2rem;
+}
+
+/* Layout Utilities */
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-center .divider {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Reusable Components */
+/* Smooth gradient outline button */
+.btn-primary {
+    display: inline-block;
+    padding: 1rem 2.5rem;
+    background-color: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: var(--transition);
+    cursor: pointer;
+    background-image: linear-gradient(to right, transparent 50%, var(--gold) 50%);
+    background-size: 200% 100%;
+    background-position: left bottom;
+}
+
+.btn-primary:hover {
+    background-position: right bottom;
+    color: #fff;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+/* Elegant Glassmorphism Effect */
+.glass {
+    background: rgba(253, 251, 247, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
+}
+
+/* Navigation Bar */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    transition: var(--transition);
+}
+
+.navbar.scrolled {
+    background: rgba(253, 251, 247, 0.98);
+    padding: 1rem 2rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.nav-brand {
+    font-family: var(--font-accent);
+    font-size: 2.5rem;
+    color: var(--gold);
+    text-decoration: none;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar.scrolled .nav-brand {
+    text-shadow: none;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 2.5rem;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #fff;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: color 0.3s ease;
+    position: relative;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.navbar.scrolled .nav-links a {
+    color: var(--dark);
+    text-shadow: none;
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--gold);
+    transition: var(--transition);
+}
+
+.nav-links a:hover::after,
+.nav-links a.active::after {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+    }
+}
+
+/* Sections Foundation */
+.section {
+    padding: 8rem 0;
+}
+
+/* Hero Section */
+.hero {
+    height: 100vh;
+    /* Premium romantic hero image */
+    background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=2070');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    color: #fff;
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.6));
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 1rem;
+}
+
+.wedding-date {
+    font-size: 1.2rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 1rem;
+    font-weight: 300;
+}
+
+.scroll-indicator {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    animation: bounce 2s infinite;
+    z-index: 2;
+    opacity: 0.8;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translate(-50%, 0); }
+    40% { transform: translate(-50%, -15px); }
+    60% { transform: translate(-50%, -7px); }
+}
+
+/* Our Story Section */
+.sec-story .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.story-text {
+    font-size: 1.15rem;
+    color: var(--grey);
+    margin-bottom: 2rem;
+}
+
+.signature {
+    font-family: var(--font-accent);
+    font-size: 2.5rem;
+    color: var(--gold);
+}
+
+.story-images {
+    position: relative;
+    height: 500px;
+}
+
+.story-img {
+    position: absolute;
+    border-radius: 8px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+    object-fit: cover;
+}
+
+.story-img:hover {
+    transform: scale(1.03) translateY(-10px);
+    z-index: 10;
+}
+
+.img-1 {
+    width: 65%;
+    height: 80%;
+    top: 0;
+    left: 0;
+    z-index: 2;
+}
+
+.img-2 {
+    width: 55%;
+    height: 70%;
+    bottom: 0;
+    right: 0;
+    z-index: 1;
+}
+
+/* Details Section */
+.sec-details {
+    background-color: var(--blush);
+}
+
+.details-cards {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-top: 4rem;
+    flex-wrap: wrap;
+}
+
+.detail-card {
+    flex: 1;
+    min-width: 300px;
+    max-width: 450px;
+    padding: 3rem 2rem;
+    transition: transform 0.4s ease;
+}
+
+.detail-card:hover {
+    transform: translateY(-5px);
+}
+
+.icon-wrap {
+    margin-bottom: 1.5rem;
+}
+
+.detail-card h3 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--dark);
+}
+
+.detail-card p {
+    color: var(--grey);
+    margin-bottom: 0.5rem;
+}
+
+.location-name {
+    font-family: var(--font-heading);
+    font-size: 1.4rem !important;
+    color: var(--dark) !important;
+    margin-top: 2rem;
+}
+
+/* RSVP Section */
+.sec-rsvp {
+    background-image: url('https://images.unsplash.com/photo-1469371670807-0136209eb471?auto=format&fit=crop&q=80&w=2070');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    position: relative;
+}
+
+.sec-rsvp::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(253, 251, 247, 0.82); /* Cream overlay */
+}
+
+.rsvp-wrapper {
+    position: relative;
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 4rem;
+}
+
+.form-group {
+    margin-bottom: 2rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0.8rem;
+    color: var(--dark);
+    font-weight: 700;
+}
+
+input[type="text"],
+input[type="email"],
+select,
+textarea {
+    width: 100%;
+    padding: 1.2rem;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.8);
+    border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    background: #fff;
+}
+
+/* Custom Radio Buttons */
+.radio-group > p {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 400 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    margin-bottom: 0.8rem !important;
+}
+
+.radio-label input {
+    display: none;
+}
+
+.custom-radio {
+    width: 20px;
+    height: 20px;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 50%;
+    margin-right: 12px;
+    position: relative;
+    display: inline-block;
+}
+
+.radio-label input:checked + .custom-radio {
+    border-color: var(--gold);
+}
+
+.radio-label input:checked + .custom-radio::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    background: var(--gold);
+    border-radius: 50%;
+}
+
+/* Success Message hidden state using CSS */
+.hidden-state {
+    display: none;
+    opacity: 0;
+}
+
+.form-success {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.success-icon {
+    margin-bottom: 1.5rem;
+}
+
+/* Footer Section */
+.footer {
+    background-color: var(--dark);
+    color: #fff;
+    padding: 5rem 0 3rem;
+}
+
+.footer .text-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.footer-names {
+    color: #fff;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    text-shadow: none;
+}
+
+/* Animation Classes */
+.hidden {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 1s cubic-bezier(0.165, 0.84, 0.44, 1), 
+                transform 1s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fade-in {
+    animation: fadeIn 1.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Defaults */
+@media (max-width: 900px) {
+    .sec-story .container {
+        grid-template-columns: 1fr;
+    }
+    
+    .story-images {
+        height: 400px;
+        order: -1;
+    }
+    
+    .img-1 {
+        width: 80%;
+    }
+    
+    .img-2 {
+        width: 60%;
+    }
+    
+    .rsvp-wrapper {
+        padding: 3rem 2rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .section {
+        padding: 5rem 0;
+    }
+    
+    .navbar {
+        padding: 1.5rem;
+    }
+    
+    .nav-brand {
+        font-size: 2rem;
+    }
+}

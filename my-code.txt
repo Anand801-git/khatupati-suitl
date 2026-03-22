@@ -1,0 +1,19 @@
+File: src/ai/dev.ts
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/ai-challan-description-generator.ts';
+import '@/ai/flows/intelligent-cost-anomaly-detection.ts';
+import '@/ai/flows/ai-design-insight-tool-flow.ts';
+import '@/ai/flows/natural-language-filter-flow.ts';
+import '@/ai/flows/production-assistant-flow.ts';
+
+
+File: src/ai/genkit.ts
+import {genkit} from 'genkit';
+import {googleAI} from '@genkit-ai/google-genai';
+
+export const ai = genkit({
+  plugins: [googleAI()],
+  model: 'googleai/gemini-2.5-flash',
+});

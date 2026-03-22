@@ -1,0 +1,18 @@
+node_modules
+.next
+.env*
+build
+.vercel
+dist
+*.log
+.DS_Store
+.vscode
+platforms/
+# Capacitor
+android/
+ios/
+capacitor.config.json
+# Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
