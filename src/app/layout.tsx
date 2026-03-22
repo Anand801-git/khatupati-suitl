@@ -48,7 +48,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Khatupati" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="font-body antialiased bg-background min-h-screen">
+      <body className="font-body antialiased bg-background min-h-screen" suppressHydrationWarning>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

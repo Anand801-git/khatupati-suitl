@@ -5,6 +5,9 @@ import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/fi
 import { getAuth, Auth } from 'firebase/auth';
 import { firebaseConfig } from './config';
 
+// Guard flag - persistence can only be enabled once per Firestore instance
+let persistenceEnabled = false;
+
 export function initializeFirebase(): {
   app: FirebaseApp;
   firestore: Firestore;
@@ -14,24 +17,22 @@ export function initializeFirebase(): {
   if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey === '') {
     const errorMsg = 'Firebase API Key is missing. Please check your environment variables (NEXT_PUBLIC_FIREBASE_API_KEY).';
     console.error(errorMsg);
-    // We throw here to provide a clear stack trace and message in the Next.js error overlay
     throw new Error(errorMsg);
   }
 
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
   const firestore = getFirestore(app);
 
-  // Enable offline persistence
-  if (typeof window !== 'undefined') {
+  // Enable offline persistence only once (guard against React 18 double-invoke)
+  if (typeof window !== 'undefined' && !persistenceEnabled) {
+    persistenceEnabled = true;
     enableIndexedDbPersistence(firestore).catch((err) => {
       if (err.code === 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled
-        // in one tab at a a time.
-        console.warn('Firestore persistence failed-precondition');
+        console.warn('Firestore persistence: multiple tabs open, persistence only works in one tab at a time.');
       } else if (err.code === 'unimplemented') {
-        // The current browser does not support all of the
-        // features required to enable persistence
-        console.warn('Firestore persistence unimplemented');
+        console.warn('Firestore persistence: not supported in this browser.');
+      } else {
+        console.warn('Firestore persistence error:', err.code);
       }
     });
   }
