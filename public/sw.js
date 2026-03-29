@@ -1,30 +1,40 @@
-// Khatupati PWA Service Worker - Advanced Offline & Cache Strategy
-const CACHE_NAME = 'khatupati-v4';
+// Khatupati PWA Service Worker - Full Offline Cache-First Strategy
+const CACHE_NAME = 'khatupati-v6';
+const STATIC_CACHE = 'khatupati-static-v6';
+const DYNAMIC_CACHE = 'khatupati-dynamic-v6';
 
-// Assets to cache immediately on install
-const PRECACHE_ASSETS = [
+// Critical app shell pages to pre-cache on install
+const APP_SHELL = [
   '/',
   '/login',
   '/offline',
+  '/purchases',
+  '/lots/new',
+  '/jobs',
+  '/production-map',
+  '/reports',
+  '/cashflow',
+  '/briefing',
+  '/trends',
+  '/forecast',
+  '/settings/storage',
+  '/settings/vendors',
   '/manifest.json',
-  '/manifest.webmanifest',
   '/icon-192.png',
   '/icon-512.png',
-  '/favicon.ico',
-  '/apple-touch-icon.png'
 ];
 
+// ── Install: pre-cache the whole app shell ─────────────────────────────────
 self.addEventListener('install', (event) => {
-  addLog('Service Worker: Installing...');
+  console.log('[SW] Installing - caching app shell');
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      // Cache assets one by one to avoid entire failure if one is missing
-      for (const asset of PRECACHE_ASSETS) {
+    caches.open(STATIC_CACHE).then(async (cache) => {
+      for (const url of APP_SHELL) {
         try {
-          await cache.add(asset);
-          addLog(`Cached asset: ${asset}`);
+          await cache.add(url);
+          console.log(`[SW] Cached: ${url}`);
         } catch (e) {
-          console.warn(`Failed to cache asset: ${asset}`, e);
+          console.warn(`[SW] Failed to cache: ${url}`, e.message);
         }
       }
     })
@@ -32,58 +42,99 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
+// ── Activate: clear old caches ─────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-  addLog('Service Worker: Activating...');
+  console.log('[SW] Activating - clearing old caches');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    })
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((k) => k !== STATIC_CACHE && k !== DYNAMIC_CACHE)
+          .map((k) => {
+            console.log('[SW] Deleting old cache:', k);
+            return caches.delete(k);
+          })
+      )
+    )
   );
   self.clients.claim();
 });
 
+// ── Fetch: Cache-First for assets, Network-First for navigation ────────────
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests and same-origin requests
-  if (event.request.method !== 'GET') return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  const { request } = event;
 
+  // Only handle GET
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+
+  // Skip non-http requests (chrome-extension:// etc)
+  if (!url.protocol.startsWith('http')) return;
+
+  // Skip Google Fonts and external requests - serve cached or skip
+  if (!url.origin.includes('localhost') && !url.origin.includes('127.0.0.1')) {
+    // For external requests (fonts etc), try cache then network, never fail
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request)
+          .then((res) => {
+            if (res && res.status === 200) {
+              const clone = res.clone();
+              caches.open(DYNAMIC_CACHE).then((c) => c.put(request, clone));
+            }
+            return res;
+          })
+          .catch(() => new Response('', { status: 200 }));
+      })
+    );
+    return;
+  }
+
+  // For Next.js JS/CSS chunks → Cache-First (they are hashed, safe to cache forever)
+  const isStaticAsset =
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.match(/\.(png|jpg|jpeg|svg|ico|webp|woff|woff2|ttf)$/);
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(DYNAMIC_CACHE).then((c) => c.put(request, clone));
+          }
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // For page navigations & API routes → Network-First with cache fallback
   event.respondWith(
-    // 1. Try network first
-    fetch(event.request)
-      .then((response) => {
-        // 2. If valid response, clone and cache it
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+    fetch(request)
+      .then((res) => {
+        // Cache successful responses for later offline use
+        if (res && res.status === 200 && res.type !== 'opaque') {
+          const clone = res.clone();
+          caches.open(DYNAMIC_CACHE).then((c) => c.put(request, clone));
         }
-        return response;
+        return res;
       })
       .catch(() => {
-        // 3. Fallback to cache if network fails
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          
-          // 4. Special fallback for navigation (pages)
-          if (event.request.mode === 'navigate') {
-            return caches.match('/offline');
+        // Network failed → serve from cache
+        return caches.match(request).then((cached) => {
+          if (cached) return cached;
+          // Final fallback for navigation
+          if (request.mode === 'navigate') {
+            return caches.match('/').then((r) => r || caches.match('/offline'));
           }
-          
-          return new Response('Offline content not available', { 
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({ 'Content-Type': 'text/plain' })
-          });
+          return new Response('Offline', { status: 503 });
         });
       })
   );
 });
-
-function addLog(msg) {
-  console.log(`[PWA-SW] ${msg}`);
-}

@@ -2,12 +2,11 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import { Purchase, MasterEntry, ProductionJob } from './types';
-import { initDB } from './db/database';
-import { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { v4 as uuidv4 } from 'uuid';
 import { Capacitor } from '@capacitor/core';
-import { sqlite } from './db/database';
 import { saveMediaLocally, deleteMediaLocally } from './media-store';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface KhatupatiStoreContextType {
   purchases: Purchase[];
@@ -26,245 +25,197 @@ interface KhatupatiStoreContextType {
   addVendor: (vendor: { name: string, type: 'Embroidery' | 'Value Addition' }) => Promise<void>;
   calculateSuratMath: (purchase: Purchase, assignments: ProductionJob[]) => number;
   isLoaded: boolean;
-  vendors: { id: string, name: string, type: 'Embroidery' | 'Value Addition' }[]; 
+  vendors: { id: string, name: string, type: 'Embroidery' | 'Value Addition' }[];
   qualities: MasterEntry[];
 }
 
 const KhatupatiStoreContext = createContext<KhatupatiStoreContextType | undefined>(undefined);
-
 const safeMax = (arr: number[]) => arr.length === 0 ? 0 : Math.max(...arr);
 
+// ─── localStorage helpers ────────────────────────────────────────────────────
+
+const LS_LOTS = 'khatupati_lots';
+const LS_ASSIGN = 'khatupati_assignments';
+const LS_DIR = 'khatupati_directory';
+
+function lsGet<T>(key: string): T[] {
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+}
+function lsSet<T>(key: string, data: T[]) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+// ─── Provider ────────────────────────────────────────────────────────────────
+
 export function KhatupatiProvider({ children }: { children: ReactNode }) {
-  const [db, setDb] = useState<SQLiteDBConnection | null>(null);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [allAssignments, setAllAssignments] = useState<ProductionJob[]>([]);
   const [directory, setDirectory] = useState<MasterEntry[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Load data on mount
   useEffect(() => {
-    const setupDatabase = async () => {
+    const loadData = () => {
       try {
-        const database = await initDB();
-        setDb(database);
-        await refreshData(database);
+        const lots = lsGet<any>(LS_LOTS).map((row: any) => ({
+          ...row,
+          kurta: typeof row.kurta === 'string' ? JSON.parse(row.kurta || '{}') : (row.kurta || {}),
+          salwar: typeof row.salwar === 'string' ? JSON.parse(row.salwar || '{}') : (row.salwar || {}),
+          dupatta: typeof row.dupatta === 'string' ? JSON.parse(row.dupatta || '{}') : (row.dupatta || {}),
+          lace: typeof row.lace === 'string' ? JSON.parse(row.lace || '{}') : (row.lace || {}),
+          tags: typeof row.tags === 'string' ? JSON.parse(row.tags || '[]') : (row.tags || []),
+        }));
+        setPurchases(lots);
+
+        const assigns = lsGet<any>(LS_ASSIGN).map((row: any) => ({
+          ...row,
+          components: typeof row.components === 'string' ? JSON.parse(row.components || '[]') : (row.components || []),
+          isFinalStep: row.isFinalStep === true || row.isFinalStep === 1,
+        }));
+        setAllAssignments(assigns);
+
+        setDirectory(lsGet<MasterEntry>(LS_DIR));
         setIsLoaded(true);
       } catch (err) {
-        console.error("Failed to setup database", err);
+        console.error('Failed to load data from localStorage', err);
+        setIsLoaded(true); // Still mark as loaded to avoid infinite spinner
       }
     };
-    setupDatabase();
+
+    loadData();
   }, []);
 
-  const refreshData = async (database: SQLiteDBConnection) => {
-    if (!database) return;
-    
-    // Fetch Lots
-    const lotsRes = await database.query('SELECT * FROM lots');
-    const lotsData: Purchase[] = (lotsRes.values || []).map(row => ({
-      ...row,
-      kurta: JSON.parse(row.kurta || '{}'),
-      salwar: JSON.parse(row.salwar || '{}'),
-      dupatta: JSON.parse(row.dupatta || '{}'),
-      lace: JSON.parse(row.lace || '{}'),
-      tags: JSON.parse(row.tags || '[]')
+  // ── helpers ─────────────────────────────────────────────────────────────────
+
+  const syncLots = useCallback((updated: Purchase[]) => {
+    const serialised = updated.map(p => ({
+      ...p,
+      kurta: JSON.stringify(p.kurta),
+      salwar: JSON.stringify(p.salwar),
+      dupatta: JSON.stringify(p.dupatta),
+      lace: JSON.stringify(p.lace),
+      tags: JSON.stringify(p.tags || []),
     }));
-    setPurchases(lotsData);
+    lsSet(LS_LOTS, serialised);
+    setPurchases(updated);
+  }, []);
 
-    // Fetch Assignments
-    const assignRes = await database.query('SELECT * FROM assignments');
-    const assignData: ProductionJob[] = (assignRes.values || []).map(row => ({
-      ...row,
-      components: JSON.parse(row.components || '[]'),
-      isFinalStep: row.isFinalStep === 1
+  const syncAssignments = useCallback((updated: ProductionJob[]) => {
+    const serialised = updated.map(a => ({
+      ...a,
+      components: JSON.stringify(a.components),
+      isFinalStep: a.isFinalStep ? 1 : 0,
     }));
-    setAllAssignments(assignData);
+    lsSet(LS_ASSIGN, serialised);
+    setAllAssignments(updated);
+  }, []);
 
-    // Fetch Directory
-    const dirRes = await database.query('SELECT * FROM directory');
-    const dirData: MasterEntry[] = dirRes.values || [];
-    setDirectory(dirData);
-  };
+  const syncDirectory = useCallback((updated: MasterEntry[]) => {
+    lsSet(LS_DIR, updated);
+    setDirectory(updated);
+  }, []);
 
-  const executeAndRefresh = useCallback(async (query: string, values: any[]) => {
-    if (!db) throw new Error("Database not initialized");
-    await db.run(query, values);
-    if (Capacitor.getPlatform() === 'web') {
-      await sqlite.saveToStore('khatupati_local_db');
-    }
-    await refreshData(db);
-  }, [db]);
+  // ── Derived ──────────────────────────────────────────────────────────────────
 
-  const vendors = useMemo(() => {
-    return directory
-      .filter(e => e.category === 'Vendor')
-      .map(e => ({ id: e.id, name: e.name, type: e.subCategory as 'Embroidery' | 'Value Addition' }));
-  }, [directory]);
+  const vendors = useMemo(() =>
+    directory.filter(e => e.category === 'Vendor')
+      .map(e => ({ id: e.id, name: e.name, type: e.subCategory as 'Embroidery' | 'Value Addition' })),
+    [directory]
+  );
 
   const qualities = useMemo(() => directory.filter(e => e.category === 'Fabric'), [directory]);
 
+  // ── Purchases / Lots ─────────────────────────────────────────────────────────
+
   const addPurchase = useCallback(async (purchase: Omit<Purchase, 'id' | 'createdAt' | 'owner'>) => {
     const id = uuidv4();
-    const createdAt = new Date().toISOString();
-    const owner = 'local_user'; // Removed Firebase Auth
-
     let mediaUri = purchase.designPhoto || '';
-    if (mediaUri && mediaUri.startsWith('data:image')) {
+    if (mediaUri && mediaUri.startsWith('data:image') && Capacitor.isNativePlatform()) {
       mediaUri = await saveMediaLocally(mediaUri, `lot_${id}`);
     }
-
-    const query = `
-      INSERT INTO lots (id, qualityName, piecesCount, state, purchaseDate, designPhoto, kurta, salwar, dupatta, lace, createdAt, owner, tags, range)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [
-      id, purchase.qualityName, purchase.piecesCount, purchase.state, purchase.purchaseDate, mediaUri,
-      JSON.stringify(purchase.kurta), JSON.stringify(purchase.salwar), JSON.stringify(purchase.dupatta), JSON.stringify(purchase.lace),
-      createdAt, owner, JSON.stringify(purchase.tags || []), purchase.range || ''
-    ];
-    
-    await executeAndRefresh(query, values);
+    const newLot: Purchase = {
+      ...purchase,
+      id,
+      createdAt: new Date().toISOString(),
+      owner: 'local_user',
+      designPhoto: mediaUri,
+    };
+    syncLots([newLot, ...purchases]);
     return id;
-  }, [executeAndRefresh]);
+  }, [purchases, syncLots]);
 
   const updatePurchase = useCallback(async (updatedPurchase: Partial<Purchase> & { id: string }) => {
-    if (!db) return;
     const { id, ...data } = updatedPurchase;
-    
-    const updates: string[] = [];
-    const values: any[] = [];
-    
-    for (const [key, value] of Object.entries(data)) {
-      if (key === 'designPhoto' && typeof value === 'string' && value.startsWith('data:image')) {
-        const newUri = await saveMediaLocally(value as string, `lot_${id}`);
-        updates.push(`${key} = ?`);
-        values.push(newUri);
-      } else {
-        updates.push(`${key} = ?`);
-        if (typeof value === 'object') {
-          values.push(JSON.stringify(value));
-        } else {
-          values.push(value);
-        }
-      }
+
+    let mediaUri = data.designPhoto;
+    if (mediaUri && mediaUri.startsWith('data:image') && Capacitor.isNativePlatform()) {
+      mediaUri = await saveMediaLocally(mediaUri, `lot_${id}`);
+      data.designPhoto = mediaUri;
     }
-    
-    values.push(id);
-    const query = `UPDATE lots SET ${updates.join(', ')} WHERE id = ?`;
-    await executeAndRefresh(query, values);
-  }, [db, executeAndRefresh]);
+
+    const updated = purchases.map(p => p.id === id ? { ...p, ...data } : p);
+    syncLots(updated);
+  }, [purchases, syncLots]);
 
   const deletePurchase = useCallback(async (lotId: string) => {
-    if (!db) return;
     const lot = purchases.find(p => p.id === lotId);
-    if (lot && lot.designPhoto) {
+    if (lot?.designPhoto && Capacitor.isNativePlatform()) {
       await deleteMediaLocally(lot.designPhoto);
     }
-    await db.run('DELETE FROM lots WHERE id = ?', [lotId]);
-    await db.run('DELETE FROM assignments WHERE lotId = ?', [lotId]);
-    if (Capacitor.getPlatform() === 'web') {
-      await sqlite.saveToStore('khatupati_local_db');
-    }
-    await refreshData(db);
-  }, [db, purchases]);
+    syncLots(purchases.filter(p => p.id !== lotId));
+    syncAssignments(allAssignments.filter(a => a.lotId !== lotId));
+  }, [purchases, allAssignments, syncLots, syncAssignments]);
 
   const duplicatePurchase = useCallback(async (id: string) => {
     const original = purchases.find(p => p.id === id);
     if (!original) return;
-    
     const newId = uuidv4();
-    const query = `
-      INSERT INTO lots (id, qualityName, piecesCount, state, purchaseDate, designPhoto, kurta, salwar, dupatta, lace, createdAt, owner, tags, range)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [
-      newId, original.qualityName, original.piecesCount, 'Purchased', new Date().toISOString().split('T')[0], original.designPhoto || '',
-      JSON.stringify(original.kurta), JSON.stringify(original.salwar), JSON.stringify(original.dupatta), JSON.stringify(original.lace),
-      new Date().toISOString(), 'local_user', JSON.stringify(original.tags || []), original.range || ''
-    ];
-    
-    await executeAndRefresh(query, values);
+    const dup: Purchase = {
+      ...original,
+      id: newId,
+      state: 'Purchased',
+      purchaseDate: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+    };
+    syncLots([dup, ...purchases]);
     return newId;
-  }, [purchases, executeAndRefresh]);
+  }, [purchases, syncLots]);
+
+  // ── Assignments ───────────────────────────────────────────────────────────────
 
   const addAssignment = useCallback(async (lotId: string, assignment: Omit<ProductionJob, 'id' | 'lotId'>) => {
-    const id = uuidv4();
-    const query = `
-      INSERT INTO assignments (id, lotId, vendorName, vendorId, rate, sentDate, receivedDate, receivedQty, challanPhoto, receivedPhoto, challanNumber, processType, components, isFinalStep)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [
-      id, lotId, assignment.vendorName, assignment.vendorId || '', assignment.rate, assignment.sentDate, 
-      assignment.receivedDate || '', assignment.receivedQty || 0, assignment.challanPhoto || '', 
-      assignment.receivedPhoto || '', assignment.challanNumber || '', assignment.processType, 
-      JSON.stringify(assignment.components), assignment.isFinalStep ? 1 : 0
-    ];
-    await executeAndRefresh(query, values);
-  }, [executeAndRefresh]);
+    const newJob: ProductionJob = { ...assignment, id: uuidv4(), lotId };
+    syncAssignments([...allAssignments, newJob]);
+  }, [allAssignments, syncAssignments]);
 
   const updateAssignment = useCallback(async (id: string, data: Partial<ProductionJob>) => {
-    if (!db) return;
-    const updates: string[] = [];
-    const values: any[] = [];
-    
-    for (const [key, value] of Object.entries(data)) {
-      if (key === 'id') continue;
-      updates.push(`${key} = ?`);
-      if (typeof value === 'object') {
-        values.push(JSON.stringify(value));
-      } else if (typeof value === 'boolean') {
-        values.push(value ? 1 : 0);
-      } else {
-        values.push(value);
-      }
-    }
-    
-    values.push(id);
-    const query = `UPDATE assignments SET ${updates.join(', ')} WHERE id = ?`;
-    await executeAndRefresh(query, values);
-  }, [db, executeAndRefresh]);
+    syncAssignments(allAssignments.map(a => a.id === id ? { ...a, ...data } : a));
+  }, [allAssignments, syncAssignments]);
 
   const deleteAssignment = useCallback(async (assignmentId: string) => {
-    const query = `DELETE FROM assignments WHERE id = ?`;
-    await executeAndRefresh(query, [assignmentId]);
-  }, [executeAndRefresh]);
+    syncAssignments(allAssignments.filter(a => a.id !== assignmentId));
+  }, [allAssignments, syncAssignments]);
+
+  // ── Directory ─────────────────────────────────────────────────────────────────
 
   const addDirectoryEntry = useCallback(async (entry: Omit<MasterEntry, 'id'>) => {
-    const id = uuidv4();
-    const query = `
-      INSERT INTO directory (id, name, category, subCategory, supplierName, rate, meters, dying)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [
-      id, entry.name, entry.category, entry.subCategory, 
-      entry.supplierName || '', entry.rate || 0, entry.meters || 0, entry.dying || 0
-    ];
-    await executeAndRefresh(query, values);
-  }, [executeAndRefresh]);
+    const newEntry: MasterEntry = { ...entry, id: uuidv4() };
+    syncDirectory([...directory, newEntry]);
+  }, [directory, syncDirectory]);
 
   const updateDirectoryEntry = useCallback(async (entry: Partial<MasterEntry> & { id: string }) => {
-    if (!db) return;
-    const { id, ...data } = entry;
-    const updates: string[] = [];
-    const values: any[] = [];
-    
-    for (const [key, value] of Object.entries(data)) {
-      updates.push(`${key} = ?`);
-      values.push(value);
-    }
-    
-    values.push(id);
-    const query = `UPDATE directory SET ${updates.join(', ')} WHERE id = ?`;
-    await executeAndRefresh(query, values);
-  }, [db, executeAndRefresh]);
+    syncDirectory(directory.map(e => e.id === entry.id ? { ...e, ...entry } : e));
+  }, [directory, syncDirectory]);
 
   const deleteDirectoryEntry = useCallback(async (id: string) => {
-    const query = `DELETE FROM directory WHERE id = ?`;
-    await executeAndRefresh(query, [id]);
-  }, [executeAndRefresh]);
+    syncDirectory(directory.filter(e => e.id !== id));
+  }, [directory, syncDirectory]);
 
   const addVendor = useCallback(async (vendor: { name: string, type: 'Embroidery' | 'Value Addition' }) => {
     await addDirectoryEntry({ name: vendor.name, category: 'Vendor', subCategory: vendor.type });
   }, [addDirectoryEntry]);
+
+  // ── Math ───────────────────────────────────────────────────────────────────────
 
   const calculateSuratMath = useCallback((purchase: Purchase, assignments: ProductionJob[]) => {
     if (!purchase) return 0;
@@ -273,22 +224,20 @@ export function KhatupatiProvider({ children }: { children: ReactNode }) {
     const dCost = ((purchase.dupatta?.ratePerMeter || 0) * (purchase.dupatta?.metersPerPiece || 0)) + (purchase.dupatta?.dyingCharges || 0);
     const lCost = ((purchase.lace?.ratePerMeter || 0) * (purchase.lace?.metersPerPiece || 0)) / (purchase.piecesCount || 1);
     const fabricTotal = kCost + sCost + dCost + lCost;
-    
     const totalProcessing = assignments.reduce((sum, job) => {
       const qty = job.receivedQty ?? safeMax(job.components.map(c => c.quantity));
       return sum + (qty * job.rate);
     }, 0);
-    
     return fabricTotal + (totalProcessing / (purchase.piecesCount || 1));
   }, []);
 
   return (
-    <KhatupatiStoreContext.Provider value={{ 
-      purchases, allAssignments, directory, 
-      addPurchase, updatePurchase, deletePurchase, duplicatePurchase, 
-      addAssignment, updateAssignment, deleteAssignment, 
+    <KhatupatiStoreContext.Provider value={{
+      purchases, allAssignments, directory,
+      addPurchase, updatePurchase, deletePurchase, duplicatePurchase,
+      addAssignment, updateAssignment, deleteAssignment,
       addDirectoryEntry, updateDirectoryEntry, deleteDirectoryEntry, addVendor,
-      calculateSuratMath, isLoaded, vendors, qualities 
+      calculateSuratMath, isLoaded, vendors, qualities
     }}>
       {children}
     </KhatupatiStoreContext.Provider>

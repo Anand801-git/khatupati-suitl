@@ -1,20 +1,6 @@
-
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { Inter, Space_Grotesk } from 'next/font/google';
 import ClientLayout from '@/components/ClientLayout';
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
-
-const space_grotesk = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-space-grotesk',
-});
 
 export const metadata: Metadata = {
   title: 'Khatupati Suit | Production Management',
@@ -40,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${space_grotesk.variable}`}>
+    <html lang="en" className="font-sans">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
