@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Sparkles, Send, Loader2, Bot, AlertTriangle } from 'lucide-react';
-import { handleProductionAssistant } from '@/app/actions';
+import { askLocalAI } from '@/lib/ai/local-runner';
 import { getLotStats } from '@/lib/lot-utils';
 import { differenceInDays, parseISO, isValid } from 'date-fns';
 
@@ -110,9 +110,10 @@ export function GlobalAIChat() {
         allAssignments: assignmentDetails
       });
 
-      const result = await handleProductionAssistant({ query: userQuery, context });
-      setMessages(prev => [...prev.filter(m => !m.isError), { role: 'ai', text: result.response }]);
+      const result = await askLocalAI(context, userQuery);
+      setMessages(prev => [...prev.filter(m => !m.isError), { role: 'ai', text: result }]);
     } catch (e) {
+
       console.error("AI Production Assistant Error:", e);
       setMessages(prev => [...prev.filter(m => !m.isError), {
         role: 'ai',

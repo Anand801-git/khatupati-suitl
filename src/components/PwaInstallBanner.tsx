@@ -17,11 +17,21 @@ export function PwaInstallBanner() {
   useEffect(() => {
     // Register service worker
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+      const registerSW = () => {
         navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('SW registered:', reg))
+          .then(reg => {
+            console.log('SW registered:', reg);
+            // Force update if needed
+            reg.update();
+          })
           .catch(err => console.error('SW registration failed:', err));
-      });
+      };
+
+      if (document.readyState === 'complete') {
+        registerSW();
+      } else {
+        window.addEventListener('load', registerSW);
+      }
     }
 
     // Check if already installed

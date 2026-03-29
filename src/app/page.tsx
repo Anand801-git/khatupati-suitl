@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Factory, Scissors, Package, Warehouse, History, Loader2, Sparkles, AlertCircle, IndianRupee, BarChart3, Map, LayoutList, ArrowRight, TrendingUp, Target } from 'lucide-react';
+import { Plus, Factory, Scissors, Package, Warehouse, History, Loader2, Sparkles, AlertCircle, IndianRupee, BarChart3, Map, LayoutList, ArrowRight, TrendingUp, Target, Database } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, useEffect, ReactNode } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
@@ -104,9 +104,14 @@ export default function Dashboard() {
       />
       
       <main className="container px-4 flex flex-col gap-8">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+            <Link href="/settings/storage">
+                <Button variant="outline" className="h-[36px] border-primary/10 shadow-sm gap-2 text-primary font-bold">
+                    <Database className="w-4 h-4" /> Storage
+                </Button>
+            </Link>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-[180px] bg-card border-primary/10 shadow-sm">
+                <SelectTrigger className="w-[180px] bg-card border-primary/10 shadow-sm h-[36px]">
                     <SelectValue placeholder="Select Month" />
                 </SelectTrigger>
                 <SelectContent>

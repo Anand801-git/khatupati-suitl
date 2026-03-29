@@ -23,10 +23,8 @@ import {
   ShieldCheck,
   AlertTriangle
 } from 'lucide-react';
-import { handleDemandForecast } from '@/app/actions';
+import { askLocalAI } from '@/lib/ai/local-runner';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import { format, parseISO } from 'date-fns';
 
 interface ForecastData {
@@ -39,7 +37,6 @@ interface ForecastData {
 
 export default function DemandForecastPage() {
   const { purchases, isLoaded } = useKhatupatiStore();
-  const db = useFirestore();
   const { toast } = useToast();
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -49,50 +46,50 @@ export default function DemandForecastPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchLatest = async () => {
-      if (!db) return;
+    const saved = localStorage.getItem('lastDemandForecast');
+    if (saved) {
       try {
-        const q = query(collection(db, 'forecasts'), orderBy('timestamp', 'desc'), limit(1));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          setForecast(snapshot.docs[0].data() as ForecastData);
-        }
+        setForecast(JSON.parse(saved));
       } catch (e) {
-        console.error("Failed to fetch latest forecast", e);
+        localStorage.removeItem('lastDemandForecast');
       }
-    };
-    fetchLatest();
-  }, [db]);
+    }
+  }, []);
 
   const runForecast = async () => {
     setIsGenerating(true);
     setError(null);
     try {
       let latestTrends = "No current trend data available.";
-      if (db) {
-        const trendQ = query(collection(db, 'trends'), orderBy('timestamp', 'desc'), limit(1));
-        const trendSnap = await getDocs(trendQ);
-        if (!trendSnap.empty) {
-          latestTrends = JSON.stringify(trendSnap.docs[0].data());
-        }
+      const savedTrend = localStorage.getItem('lastTrendAnalysis');
+      if (savedTrend) {
+        latestTrends = savedTrend;
       }
 
       const input = {
-        historicalPurchases: JSON.stringify(purchases.slice(0, 20).map((p: any) => ({ q: p.qualityName, d: p.purchaseDate, c: p.piecesCount }))),
+        historicalPurchases: purchases.slice(0, 20).map((p: any) => ({ q: p.qualityName, d: p.purchaseDate, c: p.piecesCount })),
         currentMarketTrends: latestTrends,
         horizon: parseInt(horizon),
         budgetLimit: parseFloat(budget)
       };
 
-      const result = await handleDemandForecast(input);
-      const forecastWithTime = { ...result, timestamp: new Date().toISOString() };
+      const systemPrompt = `You are an expert inventory planner for an Indian ethnic wear business in Surat. Analyze historical purchases and market trends. Provide a STRICT JSON response returning this format EXACTLY: { "recommendations": [{ "quality": "Fabric name", "quantity": 100, "reason": "Why", "confidence": 85 }], "designStyles": ["Style 1"], "buyingCalendar": [{ "month": "Apr 2024", "action": "Buy Silk", "priority": "High" }], "summary": "Short forecast summary" }. Return ONLY valid JSON format without markdown ticks.`;
+
+      const rawResult = await askLocalAI(systemPrompt, JSON.stringify(input));
       
-      if (db) {
-        await addDoc(collection(db, 'forecasts'), forecastWithTime);
+      let parsedResult;
+      try {
+        const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+        parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawResult);
+      } catch (e) {
+        throw new Error("Failed to parse local AI forecast");
       }
+
+      const forecastWithTime = { ...parsedResult, timestamp: new Date().toISOString() };
       
+      localStorage.setItem('lastDemandForecast', JSON.stringify(forecastWithTime));
       setForecast(forecastWithTime);
-      toast({ title: "Forecast Ready", description: "AI has projected your inventory needs." });
+      toast({ title: "Forecast Ready", description: "AI has projected your inventory needs locally." });
     } catch (e) {
       console.error("Demand Forecast Error:", e);
       setError("The AI model failed to generate a forecast. This might be due to a temporary network issue or unusual data. Please try again in a moment.");

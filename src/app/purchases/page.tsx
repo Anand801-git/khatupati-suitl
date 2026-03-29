@@ -11,8 +11,8 @@ import { Search, ArrowRight, Sparkles, Loader2, Warehouse, Factory, Clock, Check
 import { useState, useMemo, useEffect, ReactNode } from 'react';
 import { format, parseISO, isValid } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { handleNaturalLanguageFilter } from '@/app/actions';
+import { LocalImage } from '@/components/ui/local-image';
+import { askLocalAI } from '@/lib/ai/local-runner';
 import { getLotStats } from '@/lib/lot-utils';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -53,11 +53,26 @@ export default function PurchaseHistory() {
         status: p.state,
         vendorNames: allAssignments.filter(a => a.lotId === p.id).map(a => a.vendorName)
       }));
-      const result = await handleNaturalLanguageFilter({ query: searchTerm, lots: lotContext });
-      setAiMatchingIds(result.matchingIds);
-      toast({ title: "AI Filter Applied", description: result.explanation });
+
+      const systemPrompt = `You are an intelligent search assistant for Khatupati Suits. The user is searching their production lots. Look at the provided JSON list of lots and figure out which lot IDs match their natural language query (e.g. "show me lots at embroidery", "find pastel suits"). Return a STRICT JSON response exactly matching this format: { "matchingIds": ["id1", "id2"], "explanation": "Why these matched" }. Return ONLY valid JSON block.
+      Available Lots Context:
+      ${JSON.stringify(lotContext)}
+      `;
+
+      const rawResult = await askLocalAI(systemPrompt, `Search Query: ${searchTerm}`);
+      
+      let parsedResult;
+      try {
+        const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+        parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawResult);
+      } catch (e) {
+        throw new Error("Failed to parse local AI search results.");
+      }
+
+      setAiMatchingIds(parsedResult.matchingIds || []);
+      toast({ title: "AI Filter Applied", description: parsedResult.explanation || "Filtered successfully." });
     } catch (error) {
-      toast({ variant: "destructive", title: "Search Failed", description: "Gemini couldn't process this request." });
+      toast({ variant: "destructive", title: "Search Failed", description: "Local AI couldn't process this request." });
     } finally { setIsAiFiltering(false); }
   };
 
@@ -166,7 +181,7 @@ export default function PurchaseHistory() {
                      className="group relative flex flex-col gap-4 transition-all duration-400 ease-out hover:translate-x-[2px] hover:shadow-xl"
                      style={{ animation: `fade-up 0.4s ease-out ${i * 50}ms both` }}>
                   <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-muted shadow-lg cursor-pointer clickable-card" onClick={() => router.push(`/purchases/view?id=${p.id}`)}>
-                    {p.designPhoto ? <Image src={p.designPhoto} alt={p.qualityName} fill className="object-cover transition-transform group-hover:scale-105" /> : <div className="flex items-center justify-center h-full opacity-10"><Package className="w-20 h-20" /></div>}
+                    {p.designPhoto ? <LocalImage uri={p.designPhoto} alt={p.qualityName} className="object-cover transition-transform group-hover:scale-105" /> : <div className="flex items-center justify-center h-full opacity-10"><Package className="w-20 h-20" /></div>}
                     <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
                       <Badge className="bg-white/95 text-primary border-none shadow-xl uppercase font-black text-[10px] rounded-[20px]">{p.state}</Badge>
                       {p.range && (

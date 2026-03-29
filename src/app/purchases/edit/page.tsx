@@ -12,10 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import { useKhatupatiStore } from '@/lib/store';
 import { Purchase } from '@/lib/types';
 import { Upload, X, Save, ArrowLeft, Trash2, CalendarIcon, Loader2, Tag, Palette, ScanSearch } from 'lucide-react';
-import Image from 'next/image';
+import { LocalImage } from '@/components/ui/local-image';
 import Link from 'next/link';
 import { resizeImage } from '@/lib/utils';
-import { handleAiDesignInsight } from '@/app/actions';
+import { askLocalAI } from '@/lib/ai/local-runner';
 import { useToast } from '@/hooks/use-toast';
 
 function EditPurchaseContent() {
@@ -90,24 +90,31 @@ function EditPurchaseContent() {
   const runAiAnalysis = async (photoUri: string) => {
     setIsAnalyzing(true);
     try {
-      const result = await handleAiDesignInsight({ 
-        photoDataUri: photoUri,
-        description: formData.kQuality 
-      });
+      const systemPrompt = `You are an AI fashion expert for Khatupati Suits. Analyze the attached fabric design photo and the description: "${formData.kQuality}". Provide a STRICT JSON response exactly matching this format: { "keywords": ["keyword1", "keyword2"], "themes": ["theme1", "theme2"], "classification": "Category", "summary": "Short description of the design" }. Return ONLY valid JSON format.`;
+
+      const rawResult = await askLocalAI(systemPrompt, `Analyze this design for ${formData.kQuality}.`, photoUri);
       
-      if (result.keywords && result.keywords.length > 0) {
+      let parsedResult;
+      try {
+        const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+        parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawResult);
+      } catch (e) {
+        throw new Error("Failed to parse Local AI design insight");
+      }
+      
+      if (parsedResult.keywords && parsedResult.keywords.length > 0) {
         const currentTags = formData.tagsInput.split(',').map(t => t.trim()).filter(Boolean);
-        const newTags = Array.from(new Set([...currentTags, ...result.keywords])).join(', ');
+        const newTags = Array.from(new Set([...currentTags, ...parsedResult.keywords])).join(', ');
         setFormData(prev => ({ ...prev, tagsInput: newTags }));
       }
 
-      if (result.classification && !formData.range) {
-        setFormData(prev => ({ ...prev, range: result.classification }));
+      if (parsedResult.classification && !formData.range) {
+        setFormData(prev => ({ ...prev, range: parsedResult.classification }));
       }
 
       toast({
         title: "AI Analysis Complete",
-        description: `Detected: ${result.keywords.slice(0, 3).join(', ')}...`,
+        description: `Detected: ${parsedResult.keywords.slice(0, 3).join(', ')}...`,
       });
     } catch (error) {
       console.error("AI Analysis failed:", error);
@@ -246,7 +253,7 @@ function EditPurchaseContent() {
                       <Loader2 className="w-10 h-10 animate-spin opacity-20" />
                     ) : designPhoto ? (
                       <>
-                        <Image src={designPhoto} alt="Preview" fill className="object-cover" />
+                        <LocalImage uri={designPhoto} alt="Preview" className="object-cover" />
                         {isAnalyzing && (
                           <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center">
                             <div className="bg-white/90 p-3 rounded-full shadow-xl">

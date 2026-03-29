@@ -13,7 +13,7 @@ import { Purchase } from '@/lib/types';
 import { Upload, Loader2, Sparkles, Tag, Palette, AlertTriangle, ScanSearch } from 'lucide-react';
 import Image from 'next/image';
 import { resizeImage } from '@/lib/utils';
-import { handleAiDesignInsight, handleCostAnomalyDetection } from '@/app/actions';
+import { askLocalAI } from '@/lib/ai/local-runner';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -72,26 +72,33 @@ export default function NewPurchase() {
   const runAiAnalysis = async (photoUri: string) => {
     setIsAnalyzing(true);
     try {
-      const result = await handleAiDesignInsight({ 
-        photoDataUri: photoUri,
-        description: formData.kQuality 
-      });
+      const systemPrompt = `You are an AI fashion expert for Khatupati Suits. Analyze the attached fabric design photo and the description: "${formData.kQuality}". Provide a STRICT JSON response exactly matching this format: { "keywords": ["keyword1", "keyword2"], "themes": ["theme1", "theme2"], "classification": "Category", "summary": "Short description of the design" }. Return ONLY valid JSON format.`;
+
+      const rawResult = await askLocalAI(systemPrompt, `Analyze this design for ${formData.kQuality}.`, photoUri);
       
-      setAnalysisResult(result);
+      let parsedResult;
+      try {
+        const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+        parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawResult);
+      } catch (e) {
+        throw new Error("Failed to parse Local AI design insight");
+      }
       
-      if (result.keywords && result.keywords.length > 0) {
+      setAnalysisResult(parsedResult);
+      
+      if (parsedResult.keywords && parsedResult.keywords.length > 0) {
         const currentTags = formData.tagsInput.split(',').map(t => t.trim()).filter(Boolean);
-        const newTags = Array.from(new Set([...currentTags, ...result.keywords])).join(', ');
+        const newTags = Array.from(new Set([...currentTags, ...parsedResult.keywords])).join(', ');
         setFormData(prev => ({ ...prev, tagsInput: newTags }));
       }
 
-      if (result.classification && !formData.range) {
-        setFormData(prev => ({ ...prev, range: result.classification }));
+      if (parsedResult.classification && !formData.range) {
+        setFormData(prev => ({ ...prev, range: parsedResult.classification }));
       }
 
       toast({
         title: "AI Analysis Complete",
-        description: `Detected: ${result.keywords.slice(0, 3).join(', ')}...`,
+        description: `Detected: ${parsedResult.keywords.slice(0, 3).join(', ')}...`,
       });
     } catch (error) {
       console.error("AI Analysis failed:", error);
@@ -189,7 +196,9 @@ export default function NewPurchase() {
       const currentLaceCost = ((formData.lRate * formData.lMeters) / (formData.piecesCount || 1));
       const currentLandingCost = currentKurtaCost + currentSalwarCost + currentDupattaCost + currentLaceCost;
 
-      const result = await handleCostAnomalyDetection({
+      const systemPrompt = `You are a financial auditor for a Surat ethnic wear factory. Analyze the following cost metrics for a new production lot. Compare current costs to historical averages. If the current total landing cost is significantly higher (anomaly), return isAnomaly: true. Provide a STRICT JSON response exactly matching this format: { "isAnomaly": false, "overallMessage": "Message", "anomalyDetails": [{ "field": "Field Name", "currentValue": 100, "averageHistoricalValue": 90, "deviationPercentage": 11, "reason": "Why" }] }. Return ONLY valid JSON.`;
+      
+      const contextStr = JSON.stringify({
         historicalFabricRates,
         historicalDyingCharges,
         historicalTotalLandingCosts,
@@ -199,8 +208,18 @@ export default function NewPurchase() {
         componentType: 'Kurta',
       });
 
-      if (result.isAnomaly) {
-        setAnomalyData(result);
+      const rawResult = await askLocalAI(systemPrompt, contextStr);
+      
+      let parsedResult;
+      try {
+        const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+        parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawResult);
+      } catch (e) {
+        throw new Error("Local AI anomaly parsing failed.");
+      }
+
+      if (parsedResult.isAnomaly) {
+        setAnomalyData(parsedResult);
         setIsCheckingAnomaly(false);
         return;
       }

@@ -18,7 +18,7 @@ import {
   ArrowRight,
   Send
 } from 'lucide-react';
-import { handleProductionAgent } from '@/app/actions';
+import { askLocalAI } from '@/lib/ai/local-runner';
 import { getLotStats } from '@/lib/lot-utils';
 import { differenceInDays, parseISO, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -105,14 +105,26 @@ export default function ProductionBriefing() {
         allAssignments: assignmentDetails
       });
 
-      const result = await handleProductionAgent({ context });
-      const briefingWithTime = { ...result, timestamp: new Date().toISOString() };
+      const systemPrompt = `You are a production manager. Analyze the context and return a STRICT JSON object answering the production state. Format: { "urgentAlerts": [{ "severity": "High", "vendorName": "Name", "lotName": "Lot", "daysDelayed": 16 }], "costWarnings": [], "recommendedActions": [{ "priority": 1, "action": "Call Vendor", "reason": "Late" }], "dailySummary": "String summary", "whatsappDrafts": [{ "vendorName": "Name", "message": "Hi" }] }. Return ONLY valid JSON without markdown.`;
+
+      const rawResult = await askLocalAI(systemPrompt, context);
+      
+      let parsedResult;
+      try {
+        const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+        parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawResult);
+      } catch (e) {
+        console.error("Local AI returned invalid JSON:", rawResult);
+        throw new Error("Failed to parse AI response into structured data.");
+      }
+
+      const briefingWithTime = { ...parsedResult, timestamp: new Date().toISOString() };
       
       setBriefing(briefingWithTime);
       localStorage.setItem('lastProductionBriefing', JSON.stringify(briefingWithTime));
-      localStorage.setItem('briefingAlertCount', String(result.urgentAlerts.length));
+      localStorage.setItem('briefingAlertCount', String(parsedResult.urgentAlerts?.length || 0));
       
-      toast({ title: "Briefing Complete", description: "AI Agent has analyzed your production floor." });
+      toast({ title: "Briefing Complete", description: "Local AI Agent has analyzed your production floor." });
     } catch (e) {
       console.error("Briefing Generation Error:", e);
       setError("The AI agent failed to generate the briefing. This could be a temporary issue with the model or network. Please try again.");

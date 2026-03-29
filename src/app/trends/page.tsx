@@ -23,10 +23,8 @@ import {
   LayoutGrid,
   AlertTriangle
 } from 'lucide-react';
-import { handleMarketTrend } from '@/app/actions';
+import { askLocalAI } from '@/lib/ai/local-runner';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import { format, parseISO } from 'date-fns';
 
 interface MarketTrendData {
@@ -40,7 +38,6 @@ interface MarketTrendData {
 
 export default function MarketTrends() {
   const { purchases, isLoaded } = useKhatupatiStore();
-  const db = useFirestore();
   const { toast } = useToast();
   
   const [isSearching, setIsSearching] = useState(false);
@@ -50,35 +47,38 @@ export default function MarketTrends() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchLatestTrend = async () => {
-      if (!db) return;
+    const saved = localStorage.getItem('lastTrendAnalysis');
+    if (saved) {
       try {
-        const q = query(collection(db, 'trends'), orderBy('timestamp', 'desc'), limit(1));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          setTrendData(snapshot.docs[0].data() as MarketTrendData);
-        }
-      } catch(e) {
-          console.error("Failed to fetch latest trends", e);
+        setTrendData(JSON.parse(saved));
+      } catch (e) {
+        localStorage.removeItem('lastTrendAnalysis');
       }
-    };
-    fetchLatestTrend();
-  }, [db]);
+    }
+  }, []);
 
   const runAnalysis = async () => {
     setIsSearching(true);
     setError(null);
     setComparison(null);
     try {
-      const result = await handleMarketTrend({ query: searchQuery });
+      const systemPrompt = `You are a fashion market researcher in Surat. Analyze the user's query and provide current trends for ethnic wear. Return STRICT JSON matching this format exactly: { "trendingColors": [{ "name": "Color Name", "hex": "#HEXCODE" }], "designStyles": ["Style 1"], "fabricTypes": ["Fabric 1"], "recommendedPricePoints": "₹1500 - ₹3000", "marketSummary": "Short description" }. Return ONLY valid JSON.`;
+      
+      const rawResult = await askLocalAI(systemPrompt, searchQuery);
+      
+      let result;
+      try {
+        const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+        result = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawResult);
+      } catch (e) {
+        throw new Error("Local AI failed to generate valid JSON.");
+      }
+
       const trendWithTime = { ...result, timestamp: new Date().toISOString() };
       
-      if (db) {
-        await addDoc(collection(db, 'trends'), trendWithTime);
-      }
-      
+      localStorage.setItem('lastTrendAnalysis', JSON.stringify(trendWithTime));
       setTrendData(trendWithTime);
-      toast({ title: "Analysis Complete", description: "Fresh market trends identified for Indian ethnic wear." });
+      toast({ title: "Analysis Complete", description: "Fresh market trends identified on-device." });
     } catch (e) {
       console.error("Market Trend Analysis Error:", e);
       setError("The AI model could not complete the market trend analysis. This could be due to a network issue or the complexity of the query. Please simplify your search or try again later.");

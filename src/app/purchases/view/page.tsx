@@ -10,13 +10,13 @@ import { IndianRupee, ArrowLeft, Package, Factory, Pencil, ImageIcon, LayoutGrid
 import Link from 'next/link';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
-import Image from 'next/image';
+import { LocalImage } from '@/components/ui/local-image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DeleteLotModal } from '@/components/modals/DeleteLotModal';
 import { getLotStats } from '@/lib/lot-utils';
 import { generateLotSummaryPDF } from '@/lib/pdf-generator';
 import { generateTraceabilityCertificate, generateLotHash } from '@/lib/certificate-generator';
-import { handleAiDesignInsight } from '@/app/actions';
+import { askLocalAI } from '@/lib/ai/local-runner';
 import { useToast } from '@/hooks/use-toast';
 
 function PurchaseDetailsContent() {
@@ -57,16 +57,24 @@ function PurchaseDetailsContent() {
     setIsAnalyzing(true);
     setAnalysisResult(null);
     try {
-      const result = await handleAiDesignInsight({ 
-        photoDataUri: purchase.designPhoto,
-        description: purchase.qualityName 
-      });
-      setAnalysisResult(result);
+      const systemPrompt = `You are an AI fashion expert for Khatupati Suits. Analyze the attached fabric design photo and the description: "${purchase.qualityName}". Provide a STRICT JSON response exactly matching this format: { "keywords": ["keyword1", "keyword2"], "themes": ["theme1", "theme2"], "classification": "Category", "summary": "Short description of the design" }. Return ONLY valid JSON format without markdown.`;
+
+      const rawResult = await askLocalAI(systemPrompt, `Analyze this design for ${purchase.qualityName}.`, purchase.designPhoto);
+      
+      let parsedResult;
+      try {
+        const jsonMatch = rawResult.match(/\{[\s\S]*\}/);
+        parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawResult);
+      } catch (e) {
+        throw new Error("Failed to parse Local AI design insight");
+      }
+
+      setAnalysisResult(parsedResult);
     } catch (error) {
       toast({
         variant: "destructive",
         title: "AI Analysis Failed",
-        description: "Could not analyze the design photo. Please try again."
+        description: "Could not analyze the design photo locally. Please try again."
       });
     } finally {
       setIsAnalyzing(false);
@@ -154,7 +162,7 @@ function PurchaseDetailsContent() {
             <Card className="overflow-hidden border-primary/20 shadow-md animate-fade-up">
               <CardHeader className="bg-primary/5 pb-4"><CardTitle className="text-sm font-bold uppercase tracking-tight text-primary flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Design Photo</CardTitle></CardHeader>
               <div className="relative aspect-square bg-muted flex items-center justify-center">
-                {purchase.designPhoto ? <Image src={purchase.designPhoto} alt="Order" fill className="object-cover" /> : <Package className="w-12 h-12 opacity-20" />}
+                {purchase.designPhoto ? <LocalImage uri={purchase.designPhoto} alt="Order" className="object-cover" /> : <Package className="w-12 h-12 opacity-20" />}
               </div>
               {purchase.designPhoto && (
                 <CardFooter className="p-2 bg-primary/5">
